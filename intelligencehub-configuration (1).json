@@ -1,0 +1,290 @@
+{
+  "productInfo" : {
+    "company" : "HighByte",
+    "product" : "IntelligenceHub",
+    "version" : "4.2.1",
+    "build" : "2025.8.8.10",
+    "stage" : "Release"
+  },
+  "project" : {
+    "version" : 11,
+    "connections" : [ {
+      "name" : "safetySignaturesDB",
+      "uri" : "jdbc.sqlite://safetySignaturesDB",
+      "tags" : [ "siemensWebserverAPI" ],
+      "writes" : {
+        "flattenModeledValues" : false
+      },
+      "subscriptions" : { },
+      "storeForward" : {
+        "enabled" : false,
+        "maxEntries" : 100,
+        "waitOnFailureInterval" : {
+          "duration" : 1,
+          "units" : "Seconds"
+        }
+      },
+      "settings" : {
+        "strategy" : {
+          "type" : "default"
+        },
+        "database" : "C:\\Users\\koen_\\safetySignatureSQLiteDB.db"
+      }
+    }, {
+      "name" : "siemensWebServerAPI",
+      "uri" : "rest.client://siemensWebServerAPI",
+      "description" : "siemensWebServerAPI",
+      "tags" : [ "siemensWebserverAPI" ],
+      "writes" : {
+        "flattenModeledValues" : false
+      },
+      "subscriptions" : { },
+      "storeForward" : {
+        "enabled" : false,
+        "maxEntries" : 100,
+        "waitOnFailureInterval" : {
+          "duration" : 1,
+          "units" : "Seconds"
+        }
+      },
+      "settings" : {
+        "authentication" : {
+          "type" : "None",
+          "options" : {
+            "username" : "Admin",
+            "password" : {
+              "type" : "Encrypted",
+              "value" : {
+                "keyId" : "sccYTHPvPNRdTHHb8Bjkeg==",
+                "iv" : "upsU04ixWiCHyxCq4V+siQ==",
+                "ciphertext" : "3QpaRcY9p5SDyoG0BggfNQ=="
+              }
+            }
+          }
+        },
+        "baseURL" : "https://192.168.2.129",
+        "header" : [ {
+          "name" : "Content-Type",
+          "value" : "application/json"
+        } ],
+        "ignoreCertificate" : true
+      }
+    } ],
+    "inputs" : [ {
+      "name" : "getSafetySignature",
+      "connection" : "siemensWebServerAPI",
+      "type" : "rest.client",
+      "qualifier" : {
+        "acceptType" : "application/json",
+        "method" : "POST",
+        "contentType" : "application/json",
+        "includeMetadata" : false,
+        "header" : [ {
+          "name" : "X-Auth-Token",
+          "value" : "{{this.Token}}"
+        } ],
+        "isFile" : false,
+        "endpointURL" : "/api/jsonrpc",
+        "body" : "{\n    \"id\": 16,\n    \"jsonrpc\": \"2.0\",\n    \"method\": \"PlcProgram.Read\",\n    \"params\": {\n        \"var\": \"\\\"safetyInformation\\\".FPROGSIG\"\n    }\n}"
+      },
+      "cacheLifetime" : {
+        "enabled" : false
+      },
+      "template" : {
+        "type" : "Off"
+      },
+      "parameters" : {
+        "type" : "inline",
+        "model" : {
+          "name" : "params",
+          "tags" : [ ],
+          "attributes" : [ {
+            "attributeType" : "Internal",
+            "name" : "Token",
+            "nullable" : false,
+            "required" : false,
+            "array" : false,
+            "defaultValue" : "E3twU0pgV5gPMRvD1iCije3MZwKz",
+            "internalType" : "String"
+          } ]
+        }
+      }
+    }, {
+      "name" : "getToken",
+      "connection" : "siemensWebServerAPI",
+      "type" : "rest.client",
+      "qualifier" : {
+        "acceptType" : "application/json",
+        "method" : "POST",
+        "contentType" : "application/json",
+        "includeMetadata" : false,
+        "header" : [ ],
+        "isFile" : false,
+        "endpointURL" : "/api/jsonrpc",
+        "body" : "{\n\"id\": 0,\n\"jsonrpc\": \"2.0\",\n\"method\": \"Api.Login\",\n\"params\": {\n\"user\": \"Admin\",\n\"password\": \"Test1234\"\n}\n}"
+      },
+      "cacheLifetime" : {
+        "enabled" : false
+      },
+      "template" : {
+        "type" : "Off"
+      },
+      "parameters" : {
+        "type" : "EmptyParameters"
+      }
+    } ],
+    "outputs" : [ {
+      "name" : "insertSafetySignature",
+      "connection" : "safetySignaturesDB",
+      "type" : "jdbc.sqlite",
+      "qualifier" : {
+        "writeType" : "insert",
+        "createOption" : "off",
+        "tableCacheInterval" : {
+          "duration" : 1,
+          "units" : "Hours"
+        },
+        "breakupArrays" : false,
+        "table" : "safetySignatures",
+        "whereColumn" : "",
+        "logAsJSON" : false
+      }
+    } ],
+    "modeling" : {
+      "models" : [ ],
+      "instances" : [ ]
+    },
+    "conditions" : [ ],
+    "functions" : [ ],
+    "tags" : [ ],
+    "pipelines" : [ {
+      "name" : "getSafetySignature",
+      "groupAs" : "/siemensWebAPI",
+      "tags" : [ "siemensWebserverAPI" ],
+      "inputStages" : [ "RequestToken" ],
+      "stages" : [ {
+        "name" : "RequestToken",
+        "display" : {
+          "position" : {
+            "x" : 240,
+            "y" : 0
+          }
+        },
+        "config" : {
+          "type" : ".ReadConfig",
+          "failureOutputs" : [ "Error1" ],
+          "reference" : {
+            "type" : "Input",
+            "name" : "getToken",
+            "params" : { },
+            "path" : "",
+            "connectionName" : "siemensWebServerAPI"
+          }
+        },
+        "outputs" : [ "ReadSafetySignature" ]
+      }, {
+        "name" : "ReadSafetySignature",
+        "display" : {
+          "position" : {
+            "x" : 690,
+            "y" : -67
+          }
+        },
+        "config" : {
+          "type" : ".ReadConfig",
+          "failureOutputs" : [ "Error2" ],
+          "reference" : {
+            "type" : "Input",
+            "name" : "getSafetySignature",
+            "params" : {
+              "Token" : "{{event.value.result.token}}"
+            },
+            "path" : "",
+            "connectionName" : "siemensWebServerAPI"
+          }
+        },
+        "outputs" : [ "Transform" ]
+      }, {
+        "name" : "WriteToDB",
+        "display" : {
+          "position" : {
+            "x" : 1506,
+            "y" : -166
+          }
+        },
+        "config" : {
+          "type" : ".WriteConfig",
+          "failureOutputs" : [ ],
+          "references" : [ "{{Connection.safetySignaturesDB.insertSafetySignature}}" ],
+          "writeReturn" : "ignore"
+        },
+        "outputs" : [ ]
+      }, {
+        "name" : "Transform",
+        "display" : {
+          "position" : {
+            "x" : 1106,
+            "y" : -165
+          }
+        },
+        "config" : {
+          "type" : ".TransformConfig",
+          "transformExpression" : "stage.setValue({\r\n    fprogsig : event.value.result\r\n});"
+        },
+        "outputs" : [ "WriteToDB" ]
+      }, {
+        "name" : "Error1",
+        "display" : {
+          "position" : {
+            "x" : 688,
+            "y" : 43
+          }
+        },
+        "config" : {
+          "type" : ".ErrorConfig",
+          "errorMessage" : "Error"
+        },
+        "outputs" : [ ]
+      }, {
+        "name" : "Error2",
+        "display" : {
+          "position" : {
+            "x" : 1115,
+            "y" : -33
+          }
+        },
+        "config" : {
+          "type" : ".ErrorConfig",
+          "errorMessage" : "Error"
+        },
+        "outputs" : [ ]
+      } ],
+      "trackActivity" : true,
+      "triggers" : [ {
+        "name" : "PolledTrigger",
+        "display" : {
+          "position" : {
+            "x" : -450,
+            "y" : 0
+          }
+        },
+        "config" : {
+          "type" : ".TriggerPolled",
+          "enabled" : true,
+          "interval" : {
+            "duration" : 10,
+            "units" : "Seconds"
+          }
+        }
+      } ],
+      "errorHandler" : {
+        "type" : "default"
+      }
+    } ],
+    "namespace" : [ ]
+  },
+  "network" : {
+    "groups" : [ ],
+    "hubs" : [ ]
+  }
+}
